@@ -6,7 +6,67 @@ import {
 } from "../domain/constants.js";
 import { AppError } from "../domain/types.js";
 
-export async function loadImageAsBase64(imagePath: string): Promise<{
+/**
+ * Parse image input: either a file path or a data URI
+ * Handles both CLI (file paths) and Web UI (data URIs)
+ */
+export async function loadImageAsBase64(imageInput: string): Promise<{
+  base64: string;
+  mediaType: "image/jpeg" | "image/png";
+}> {
+  // Check if input is a data URI (from web UI)
+  if (imageInput.startsWith("data:image/")) {
+    return parseDataUri(imageInput);
+  }
+
+  // Otherwise, treat as file path (from CLI)
+  return loadImageFromFile(imageInput);
+}
+
+/**
+ * Parse a data URI and extract base64 + media type
+ */
+function parseDataUri(dataUri: string): {
+  base64: string;
+  mediaType: "image/jpeg" | "image/png";
+} {
+  // Format: data:image/jpeg;base64,/9j/4AAQSkZ... or data:image/png;base64,...
+  const match = dataUri.match(/^data:image\/(jpeg|png);base64,(.+)$/);
+
+  if (!match) {
+    throw new AppError(
+      "Invalid data URI format for image",
+      "IMAGE_INVALID_URI",
+      "Image data URI must be in format: data:image/jpeg;base64,... or data:image/png;base64,...",
+    );
+  }
+
+  const [, format, base64String] = match;
+  const mediaType = format === "jpeg" ? "image/jpeg" : "image/png";
+
+  // Validate size by checking base64 length
+  // Base64 encoded size = (decoded size / 3) * 4
+  // So decoded size ≈ (base64 length / 4) * 3
+  const estimatedBytes = Math.ceil((base64String.length / 4) * 3);
+
+  if (estimatedBytes > MAX_IMAGE_BYTES) {
+    throw new AppError(
+      "Image is larger than 5MB.",
+      "IMAGE_TOO_LARGE",
+      "Use a smaller image or compress it before uploading.",
+    );
+  }
+
+  return {
+    base64: base64String,
+    mediaType,
+  };
+}
+
+/**
+ * Load image from file path and convert to base64
+ */
+async function loadImageFromFile(imagePath: string): Promise<{
   base64: string;
   mediaType: "image/jpeg" | "image/png";
 }> {

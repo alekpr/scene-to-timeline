@@ -708,14 +708,15 @@
 
         // Extract fields from payload
         const globalPrompt = payload.globalPrompt || "";
-        const localPrompts = payload.segments
+        const segments = payload.timelineData.segments;
+        const localPrompts = segments
           .map((s) => s.prompt)
           .join(" | ");
-        const segmentLengths = payload.segments
+        const segmentLengths = segments
           .map((s) => s.length)
           .join(" | ");
         const maxFrames = payload.maxFrames;
-        const timelineJson = JSON.stringify(payload, null, 2);
+        const timelineJson = JSON.stringify(payload.timelineData, null, 2);
 
         // Display outputs
         document.getElementById("globalPrompt").textContent = globalPrompt;

@@ -22,7 +22,10 @@ program
   .option("--image <path>", "Optional reference image (.jpg/.png)")
   .option("--transcript <text>", "Optional voiceover transcript (Thai/English)")
   .option("--fps <number>", "Frame rate (default: 24)")
-  .option("--segments <number>", "Override segment count (default: duration/3)")
+  .option(
+    "--segments <number>",
+    "Override segment count (when omitted, inferred from scene continuity + duration)",
+  )
   .option("--output <path>", "Save timeline JSON to file")
   .option("--preview", "Show timeline preview in terminal")
   .option("--no-copy", "Disable auto-copy output to clipboard");

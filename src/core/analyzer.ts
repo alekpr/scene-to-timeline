@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { DEFAULT_ANTHROPIC_MODEL } from "../domain/constants.js";
 import { AppError, type AnalyzerResult, type ValidatedInput } from "../domain/types.js";
-import { calcSegmentCount } from "../utils/frames.js";
+import { calcSegmentCount, inferSegmentCountFromScene } from "../utils/frames.js";
 import { SCENE_ANALYZER_SYSTEM_PROMPT } from "../prompts/systemPrompt.js";
 
 const AnalyzerResultSchema = z.object({
@@ -40,7 +40,9 @@ export async function analyzeScene(input: ValidatedInput): Promise<AnalyzerResul
     );
   }
 
-  const segmentCount = calcSegmentCount(input.durationSeconds, input.requestedSegmentCount);
+  const segmentCount = input.requestedSegmentCount
+    ? calcSegmentCount(input.durationSeconds, input.requestedSegmentCount)
+    : inferSegmentCountFromScene(input.sceneOverview, input.durationSeconds);
   const secondsPerSegment = input.durationSeconds / segmentCount;
 
   const userText = [

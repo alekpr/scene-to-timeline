@@ -191,6 +191,16 @@
         background: #e0e0e0;
       }
 
+      .btn-runninghub {
+        background: linear-gradient(135deg, #0f766e 0%, #0f9f8f 100%);
+        color: white;
+      }
+
+      .btn-runninghub:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(15, 159, 143, 0.4);
+      }
+
       .btn-copy {
         background: #4caf50;
         color: white;
@@ -342,6 +352,83 @@
         display: block;
       }
 
+      .cloud-runner {
+        margin-top: 20px;
+        padding: 16px;
+        border: 2px solid #d5f2ef;
+        background: #f3fffd;
+        border-radius: 10px;
+      }
+
+      .cloud-runner h3 {
+        font-size: 1em;
+        color: #0f766e;
+        margin-bottom: 10px;
+      }
+
+      .cloud-status {
+        font-size: 0.95em;
+        color: #0f172a;
+        margin-bottom: 8px;
+      }
+
+      .cloud-task-id {
+        font-family: "Courier New", monospace;
+        font-size: 0.85em;
+        color: #334155;
+        margin-bottom: 8px;
+        word-break: break-all;
+      }
+
+      .cloud-elapsed {
+        font-family: "Courier New", monospace;
+        font-size: 0.85em;
+        color: #475569;
+        margin-bottom: 10px;
+      }
+
+      .cloud-progress {
+        width: 100%;
+        height: 10px;
+        border-radius: 999px;
+        background: #d7f1ed;
+        overflow: hidden;
+        margin-bottom: 12px;
+      }
+
+      .cloud-progress-bar {
+        width: 0%;
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #0f766e 0%, #22c55e 100%);
+        transition: width 0.25s ease;
+      }
+
+      .cloud-actions {
+        display: flex;
+        gap: 10px;
+      }
+
+      .btn-cancel {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .btn-cancel:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .cloud-link a {
+        color: #0f766e;
+        font-weight: 600;
+      }
+
       @media (max-width: 1024px) {
         .main-grid {
           grid-template-columns: 1fr;
@@ -434,7 +521,7 @@
                   id="segments"
                   min="1"
                   max="20"
-                  placeholder="Default: duration/3"
+                  placeholder="Leave empty for auto (scene continuity + duration)"
                 />
               </div>
             </div>
@@ -470,6 +557,9 @@
               <button type="submit" class="btn-primary">
                 ✨ Generate Timeline
               </button>
+              <button type="button" id="runRunningHubBtn" class="btn-runninghub">
+                ☁ Run on RunningHub
+              </button>
               <button type="reset" class="btn-secondary">Clear</button>
             </div>
           </form>
@@ -484,6 +574,22 @@
           <div id="loadingState" class="loading hidden">
             <div class="spinner"></div>
             <p style="margin-top: 10px">Generating timeline...</p>
+          </div>
+
+          <div id="cloudRunner" class="cloud-runner hidden">
+            <h3>RunningHub Cloud Task</h3>
+            <div id="cloudStatus" class="cloud-status">Status: idle</div>
+            <div id="cloudTaskId" class="cloud-task-id"></div>
+            <div id="cloudElapsed" class="cloud-elapsed">Elapsed: 00:00</div>
+            <div class="cloud-progress">
+              <div id="cloudProgressBar" class="cloud-progress-bar"></div>
+            </div>
+            <div id="cloudLink" class="cloud-link"></div>
+            <div class="cloud-actions">
+              <button type="button" id="cancelRunningHubBtn" class="btn-cancel" disabled>
+                Cancel Task
+              </button>
+            </div>
           </div>
 
           <div id="resultContainer" class="result-container">
@@ -579,11 +685,23 @@
       const imageUpload = document.getElementById("imageUpload");
       const imageInput = document.getElementById("imageInput");
       const imagePreview = document.getElementById("imagePreview");
+      const runRunningHubBtn = document.getElementById("runRunningHubBtn");
       const loadingState = document.getElementById("loadingState");
       const resultContainer = document.getElementById("resultContainer");
       const previewContainer = document.getElementById("previewContainer");
       const previewPlaceholder = document.getElementById("previewPlaceholder");
       const alerts = document.getElementById("alerts");
+      const cloudRunner = document.getElementById("cloudRunner");
+      const cloudStatus = document.getElementById("cloudStatus");
+      const cloudTaskId = document.getElementById("cloudTaskId");
+      const cloudElapsed = document.getElementById("cloudElapsed");
+      const cloudProgressBar = document.getElementById("cloudProgressBar");
+      const cloudLink = document.getElementById("cloudLink");
+      const cancelRunningHubBtn = document.getElementById("cancelRunningHubBtn");
+      let runningHubPolling = null;
+      let elapsedTimer = null;
+      let startedAtMs = 0;
+      let activeTaskId = "";
 
       // Image Upload Handlers
       imageUpload.addEventListener("click", () => imageInput.click());
@@ -634,33 +752,65 @@
         await generateTimeline();
       });
 
+      runRunningHubBtn.addEventListener("click", async () => {
+        await runOnRunningHub();
+      });
+
+      cancelRunningHubBtn.addEventListener("click", async () => {
+        await cancelRunningHubTask();
+      });
+
+      function setButtonsDisabled(isDisabled) {
+        form.querySelectorAll("button").forEach((button) => {
+          button.disabled = isDisabled;
+        });
+      }
+
+      function buildFormPayload() {
+        const scene = document.getElementById("scene").value.trim();
+        const duration = document.getElementById("duration").value;
+        const fps = document.getElementById("fps").value || null;
+        const segments = document.getElementById("segments").value || null;
+        const transcript = document.getElementById("transcript").value.trim();
+
+        return {
+          scene,
+          duration,
+          fps,
+          segments,
+          transcript,
+        };
+      }
+
+      async function getImageDataUri() {
+        const imageFile = imageInput.files[0];
+        if (!imageFile) {
+          return null;
+        }
+
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.readAsDataURL(imageFile);
+        });
+      }
+
       async function generateTimeline() {
         try {
           loadingState.classList.remove("hidden");
           resultContainer.classList.remove("show");
           previewContainer.classList.add("hidden");
           alerts.innerHTML = "";
+          setButtonsDisabled(true);
 
-          const scene = document.getElementById("scene").value.trim();
-          const duration = document.getElementById("duration").value;
-          const fps = document.getElementById("fps").value || null;
-          const segments = document.getElementById("segments").value || null;
-          const transcript = document.getElementById("transcript").value.trim();
-          const imageFile = imageInput.files[0];
+          const formPayload = buildFormPayload();
+          const { scene, duration, fps, segments, transcript } = formPayload;
 
           if (!scene || !duration) {
             throw new Error("Scene and Duration are required");
           }
 
-          // Convert image to base64
-          let imageBase64 = null;
-          if (imageFile) {
-            imageBase64 = await new Promise((resolve) => {
-              const reader = new FileReader();
-              reader.onload = (e) => resolve(e.target.result);
-              reader.readAsDataURL(imageFile);
-            });
-          }
+          const imageBase64 = await getImageDataUri();
 
           const payload = {
             scene,
@@ -693,8 +843,280 @@
           );
           console.error("Error:", error);
         } finally {
+          setButtonsDisabled(false);
           loadingState.classList.add("hidden");
         }
+      }
+
+      function clearCloudRunner() {
+        if (runningHubPolling) {
+          clearInterval(runningHubPolling);
+          runningHubPolling = null;
+        }
+
+        if (elapsedTimer) {
+          clearInterval(elapsedTimer);
+          elapsedTimer = null;
+        }
+
+        activeTaskId = "";
+
+        cloudStatus.textContent = "Status: idle";
+        cloudTaskId.textContent = "";
+        cloudElapsed.textContent = "Elapsed: 00:00";
+        cloudProgressBar.style.width = "0%";
+        cloudLink.innerHTML = "";
+        cancelRunningHubBtn.disabled = true;
+      }
+
+      function formatElapsed(ms) {
+        const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+        const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+        const seconds = String(totalSeconds % 60).padStart(2, "0");
+        return `${minutes}:${seconds}`;
+      }
+
+      function setCloudProgressByStatus(status, attempts, maxAttempts) {
+        if (status === "SUCCESS") {
+          cloudProgressBar.style.width = "100%";
+          return;
+        }
+
+        if (status === "FAILED") {
+          cloudProgressBar.style.width = "100%";
+          return;
+        }
+
+        let percent = 8;
+        if (status === "QUEUED" || status === "CREATE") {
+          percent = Math.min(35, 8 + attempts * 2);
+        } else if (status === "RUNNING") {
+          percent = Math.min(95, 35 + attempts * 3);
+        } else {
+          percent = Math.min(85, 10 + Math.round((attempts / maxAttempts) * 75));
+        }
+
+        cloudProgressBar.style.width = `${percent}%`;
+      }
+
+      function startElapsedTimer() {
+        startedAtMs = Date.now();
+        cloudElapsed.textContent = "Elapsed: 00:00";
+        if (elapsedTimer) {
+          clearInterval(elapsedTimer);
+        }
+        elapsedTimer = setInterval(() => {
+          cloudElapsed.textContent = `Elapsed: ${formatElapsed(Date.now() - startedAtMs)}`;
+        }, 1000);
+      }
+
+      function stopElapsedTimer() {
+        if (elapsedTimer) {
+          clearInterval(elapsedTimer);
+          elapsedTimer = null;
+        }
+      }
+
+      async function cancelRunningHubTask() {
+        if (!activeTaskId) {
+          return;
+        }
+
+        try {
+          cancelRunningHubBtn.disabled = true;
+          const response = await fetch("/api/runninghub/task-cancel", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ taskId: activeTaskId }),
+          });
+          const result = await response.json();
+          if (!response.ok || Number(result.code) !== 0) {
+            throw new Error(result.error || result.msg || "Failed to cancel task");
+          }
+
+          if (runningHubPolling) {
+            clearInterval(runningHubPolling);
+            runningHubPolling = null;
+          }
+
+          stopElapsedTimer();
+          cloudStatus.textContent = "Status: CANCELED";
+          cloudLink.textContent = "Task canceled by user.";
+          cloudProgressBar.style.width = "100%";
+          showAlert("Task canceled successfully", "success");
+        } catch (error) {
+          cancelRunningHubBtn.disabled = false;
+          showAlert(error.message || "Failed to cancel task", "error");
+        }
+      }
+
+      async function runOnRunningHub() {
+        try {
+          loadingState.classList.remove("hidden");
+          alerts.innerHTML = "";
+          cloudRunner.classList.remove("hidden");
+          clearCloudRunner();
+          setButtonsDisabled(true);
+
+          const formPayload = buildFormPayload();
+          const { scene, duration, fps, segments, transcript } = formPayload;
+
+          if (!scene || !duration) {
+            throw new Error("Scene and Duration are required");
+          }
+
+          const imageBase64 = await getImageDataUri();
+
+          const payload = {
+            scene,
+            duration: parseFloat(duration),
+            fps: fps ? parseFloat(fps) : undefined,
+            segments: segments ? parseFloat(segments) : undefined,
+            transcript: transcript || undefined,
+            image: imageBase64,
+          };
+
+          cloudStatus.textContent = "Status: submitting task...";
+          cloudProgressBar.style.width = "5%";
+
+          const response = await fetch("/api/generate-and-run-runninghub", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          const result = await response.json();
+          if (!response.ok || !result.success) {
+            const hint = result.hint ? `\n${result.hint}` : "";
+            throw new Error((result.error || "Failed to start RunningHub task") + hint);
+          }
+
+          if (result.data?.timeline) {
+            displayResults({
+              payload: result.data.timeline,
+              previewOutput: null,
+              summary: {
+                duration: result.data.timeline.summary.durationSeconds,
+                segmentCount: result.data.timeline.summary.segmentCount,
+                fps: result.data.timeline.summary.fps,
+                maxFrames: result.data.timeline.maxFrames,
+              },
+            });
+          }
+
+          const taskId = String(result.data?.taskId ?? "").trim();
+          if (!taskId) {
+            throw new Error("Task submitted but no taskId returned");
+          }
+
+          activeTaskId = taskId;
+          cancelRunningHubBtn.disabled = false;
+          cloudTaskId.textContent = `Task ID: ${taskId}`;
+          cloudStatus.textContent = `Status: ${result.data?.taskStatus || "QUEUED"}`;
+          startElapsedTimer();
+          showAlert("✓ Task sent to RunningHub. Polling status...", "success");
+
+          await startRunningHubPolling(taskId);
+        } catch (error) {
+          stopElapsedTimer();
+          cancelRunningHubBtn.disabled = true;
+          showAlert(error.message || "Failed to run on RunningHub", "error");
+          cloudStatus.textContent = "Status: failed";
+          console.error("RunningHub error:", error);
+        } finally {
+          setButtonsDisabled(false);
+          loadingState.classList.add("hidden");
+        }
+      }
+
+      async function startRunningHubPolling(taskId) {
+        const maxAttempts = 90;
+        let attempts = 0;
+
+        async function checkOnce() {
+          attempts += 1;
+          const statusRes = await fetch("/api/runninghub/task-status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ taskId }),
+          });
+
+          const statusJson = await statusRes.json();
+          if (!statusRes.ok) {
+            throw new Error(statusJson.error || "Failed to poll task status");
+          }
+
+          const status = statusJson.data || "UNKNOWN";
+          cloudStatus.textContent = `Status: ${status}`;
+          setCloudProgressByStatus(status, attempts, maxAttempts);
+
+          if (status === "FAILED") {
+            throw new Error("RunningHub task failed");
+          }
+
+          if (status === "SUCCESS") {
+            const outRes = await fetch("/api/runninghub/task-output", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ taskId }),
+            });
+            const outJson = await outRes.json();
+
+            if (!outRes.ok) {
+              throw new Error(outJson.error || "Failed to fetch task output");
+            }
+
+            const files = Array.isArray(outJson.data) ? outJson.data : [];
+            const video = files.find((item) => {
+              const url = String(item.fileUrl || "").toLowerCase();
+              const type = String(item.fileType || "").toLowerCase();
+              return type.includes("mp4") || url.endsWith(".mp4") || type.includes("video");
+            }) || files[0];
+
+            if (video?.fileUrl) {
+              cloudLink.innerHTML = `<a href="${video.fileUrl}" target="_blank" rel="noopener noreferrer">Open generated video</a>`;
+              showAlert("✓ RunningHub task completed. Video link is ready.", "success");
+            } else {
+              cloudLink.textContent = "Task completed but no output URL found.";
+            }
+
+            stopElapsedTimer();
+            cancelRunningHubBtn.disabled = true;
+
+            return true;
+          }
+
+          if (attempts >= maxAttempts) {
+            throw new Error("Polling timeout: task is taking too long");
+          }
+
+          return false;
+        }
+
+        const firstDone = await checkOnce();
+        if (firstDone) {
+          return;
+        }
+
+        runningHubPolling = setInterval(async () => {
+          try {
+            const done = await checkOnce();
+            if (done && runningHubPolling) {
+              clearInterval(runningHubPolling);
+              runningHubPolling = null;
+            }
+          } catch (error) {
+            if (runningHubPolling) {
+              clearInterval(runningHubPolling);
+              runningHubPolling = null;
+            }
+            stopElapsedTimer();
+            cancelRunningHubBtn.disabled = true;
+            showAlert(error.message || "Polling failed", "error");
+            cloudStatus.textContent = "Status: failed";
+            cloudProgressBar.style.width = "100%";
+          }
+        }, 5000);
       }
 
       function displayResults(data) {
@@ -740,6 +1162,10 @@
           document.getElementById("timelinePreview").textContent = previewOutput;
           previewContainer.classList.remove("hidden");
           previewPlaceholder.style.display = "none";
+        } else {
+          document.getElementById("timelinePreview").textContent = "";
+          previewContainer.classList.add("hidden");
+          previewPlaceholder.style.display = "block";
         }
       }
 

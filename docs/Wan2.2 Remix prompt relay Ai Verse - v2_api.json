@@ -1,0 +1,318 @@
+{
+  "72": {
+    "inputs": {
+      "clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+      "type": "wan",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load CLIP"
+    }
+  },
+  "73": {
+    "inputs": {
+      "add_noise": "enable",
+      "noise_seed": 281675999652112,
+      "steps": 6,
+      "cfg": 1,
+      "sampler_name": "uni_pc",
+      "scheduler": "beta",
+      "start_at_step": 0,
+      "end_at_step": 4,
+      "return_with_leftover_noise": "enable",
+      "model": [
+        "117",
+        0
+      ],
+      "positive": [
+        "79",
+        0
+      ],
+      "negative": [
+        "79",
+        1
+      ],
+      "latent_image": [
+        "79",
+        2
+      ]
+    },
+    "class_type": "KSamplerAdvanced",
+    "_meta": {
+      "title": "KSampler (Advanced)"
+    }
+  },
+  "74": {
+    "inputs": {
+      "samples": [
+        "83",
+        0
+      ],
+      "vae": [
+        "76",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "76": {
+    "inputs": {
+      "vae_name": "wan_2.1_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "77": {
+    "inputs": {
+      "shift": 3.0000000000000004,
+      "model": [
+        "113",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingSD3",
+    "_meta": {
+      "title": "ModelSamplingSD3"
+    }
+  },
+  "78": {
+    "inputs": {
+      "shift": 3.0000000000000004,
+      "model": [
+        "114",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingSD3",
+    "_meta": {
+      "title": "ModelSamplingSD3"
+    }
+  },
+  "79": {
+    "inputs": {
+      "width": 512,
+      "height": 896,
+      "length": 193,
+      "batch_size": 1,
+      "positive": [
+        "117",
+        1
+      ],
+      "negative": [
+        "119",
+        0
+      ],
+      "vae": [
+        "76",
+        0
+      ],
+      "start_image": [
+        "85",
+        0
+      ]
+    },
+    "class_type": "WanImageToVideo",
+    "_meta": {
+      "title": "WanImageToVideo"
+    }
+  },
+  "80": {
+    "inputs": {
+      "unet_name": "Wan2.2_Remix_NSFW_i2v_14b_low_lighting_fp8_e4m3fn_v3.0.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "Load Diffusion Model"
+    }
+  },
+  "82": {
+    "inputs": {
+      "unet_name": "Wan2.2_Remix_NSFW_i2v_14b_high_lighting_fp8_e4m3fn_v3.0.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "Load Diffusion Model"
+    }
+  },
+  "83": {
+    "inputs": {
+      "add_noise": "disable",
+      "noise_seed": 276659373045694,
+      "steps": 6,
+      "cfg": 1,
+      "sampler_name": "uni_pc",
+      "scheduler": "beta",
+      "start_at_step": 4,
+      "end_at_step": 10000,
+      "return_with_leftover_noise": "disable",
+      "model": [
+        "129",
+        0
+      ],
+      "positive": [
+        "79",
+        0
+      ],
+      "negative": [
+        "79",
+        1
+      ],
+      "latent_image": [
+        "73",
+        0
+      ]
+    },
+    "class_type": "KSamplerAdvanced",
+    "_meta": {
+      "title": "KSampler (Advanced)"
+    }
+  },
+  "85": {
+    "inputs": {
+      "image": "9bf08919891131233244c2728d63e655dca8e2e3421147de2d6b9ffcd4427428.jpg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "108": {
+    "inputs": {
+      "frame_rate": 24,
+      "loop_count": 0,
+      "filename_prefix": "AnimateDiff",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true,
+      "no_preview": false,
+      "images": [
+        "74",
+        0
+      ]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Video Combine 🎥🅥🅗🅢"
+    }
+  },
+  "113": {
+    "inputs": {
+      "sage_attention": "auto",
+      "allow_compile": false,
+      "model": [
+        "82",
+        0
+      ]
+    },
+    "class_type": "PathchSageAttentionKJ",
+    "_meta": {
+      "title": "Patch Sage Attention KJ"
+    }
+  },
+  "114": {
+    "inputs": {
+      "sage_attention": "auto",
+      "allow_compile": false,
+      "model": [
+        "80",
+        0
+      ]
+    },
+    "class_type": "PathchSageAttentionKJ",
+    "_meta": {
+      "title": "Patch Sage Attention KJ"
+    }
+  },
+  "117": {
+    "inputs": {
+      "global_prompt": "Medium close-up shot of middle-aged politician in navy suit and red tie at press conference podium, dark blue curtain background with official logos, professional key lighting from camera left creating dramatic shadows, cool blue uplighting, 4K cinematic quality with subtle digital haze",
+      "max_frames": 193,
+      "timeline_data": "{\"segments\":[{\"prompt\":\"Politician standing still at podium, serious expression, hands positioned on podium edges\",\"length\":58,\"color\":\"#4f8edc\"},{\"prompt\":\"Politician begins speaking earnestly, mouth moving, subtle imperceptible digital zoom begins\",\"length\":57,\"color\":\"#e07b3a\"},{\"prompt\":\"Microsecond digital glitch reveals wireframe underneath skin around mouth and eyes, brief digital glow, snaps back to normal\",\"length\":78,\"color\":\"#d9534f\"}]}",
+      "local_prompts": "Politician standing still at podium, serious expression, hands positioned on podium edges | Politician begins speaking earnestly, mouth moving, subtle imperceptible digital zoom begins | Microsecond digital glitch reveals wireframe underneath skin around mouth and eyes, brief digital glow, snaps back to normal",
+      "segment_lengths": "58, 57, 78",
+      "epsilon": 0.001,
+      "fps": 24,
+      "time_units": "frames",
+      "model": [
+        "77",
+        0
+      ],
+      "clip": [
+        "72",
+        0
+      ],
+      "latent": [
+        "121",
+        0
+      ]
+    },
+    "class_type": "PromptRelayEncodeTimeline",
+    "_meta": {
+      "title": "Prompt Relay Encode (Timeline)"
+    }
+  },
+  "119": {
+    "inputs": {
+      "conditioning": [
+        "117",
+        1
+      ]
+    },
+    "class_type": "ConditioningZeroOut",
+    "_meta": {
+      "title": "ConditioningZeroOut"
+    }
+  },
+  "121": {
+    "inputs": {
+      "width": 512,
+      "height": 896,
+      "length": 193,
+      "batch_size": 1
+    },
+    "class_type": "EmptyHunyuanLatentVideo",
+    "_meta": {
+      "title": "Empty HunyuanVideo 1.0 Latent"
+    }
+  },
+  "129": {
+    "inputs": {
+      "global_prompt": "Medium close-up shot of middle-aged politician in navy suit and red tie at press conference podium, dark blue curtain background with official logos, professional key lighting from camera left creating dramatic shadows, cool blue uplighting, 4K cinematic quality with subtle digital haze",
+      "max_frames": 193,
+      "timeline_data": "{\"segments\":[{\"prompt\":\"Politician standing still at podium, serious expression, hands positioned on podium edges\",\"length\":58,\"color\":\"#4f8edc\"},{\"prompt\":\"Politician begins speaking earnestly, mouth moving, subtle imperceptible digital zoom begins\",\"length\":48,\"color\":\"#e07b3a\"},{\"prompt\":\"Microsecond digital glitch reveals wireframe underneath skin around mouth and eyes, brief digital glow, snaps back to normal\",\"length\":87,\"color\":\"#d9534f\"}]}",
+      "local_prompts": "Politician standing still at podium, serious expression, hands positioned on podium edges | Politician begins speaking earnestly, mouth moving, subtle imperceptible digital zoom begins | Microsecond digital glitch reveals wireframe underneath skin around mouth and eyes, brief digital glow, snaps back to normal",
+      "segment_lengths": "58, 48, 87",
+      "epsilon": 0.001,
+      "fps": 24,
+      "time_units": "frames",
+      "model": [
+        "78",
+        0
+      ],
+      "clip": [
+        "72",
+        0
+      ],
+      "latent": [
+        "121",
+        0
+      ]
+    },
+    "class_type": "PromptRelayEncodeTimeline",
+    "_meta": {
+      "title": "Prompt Relay Encode (Timeline)"
+    }
+  }
+}

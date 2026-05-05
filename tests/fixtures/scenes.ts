@@ -1,0 +1,17 @@
+export const HACKER_CONTROL_ROOM_SCENE = `A dark, cluttered control room or hacker's den. Multiple monitors display stock market crashes, chaotic news feeds, and maps with spreading red alerts.
+
+Subject: The deepfaked face of the politician, displayed on a large central monitor, speaking inflammatory words. Unseen hands are typing furiously in the foreground.
+
+Shot / Camera Motion: A fast, jarring push-in (dolly zoom effect) towards the central monitor, heightening the sense of panic and crisis.
+
+Action: The deepfaked politician's face on the main screen delivers a fabricated, aggressive speech. As he speaks, stock market charts on adjacent screens plummet from green to red, and a world map lights up with areas of conflict.
+
+Composition: Over-the-shoulder shot from behind a person typing at a keyboard, looking towards a wall of monitors. The main screen with the politician is the central focus, framed by other chaotic data.
+
+Emotion: Tense, alarming, chaotic
+
+Ambiance / Lighting: The only light sources are the cold, harsh glows from the multiple monitors, casting a blue and red light on the unseen person's hands and the surrounding equipment.
+
+Quality / Constraints: 4K UHD resolution, HDR lighting, sharp focus, hyper-realistic textures, professional cinematic color grading, no text on screen.`;
+
+export const HACKER_VOICEOVER = `A shadowy figure whispers urgently about the spreading crisis. Markets are collapsing worldwide. World leaders are panicking. The deepfaked speech continues to spread chaos across social media and news networks. Time is running out.`;

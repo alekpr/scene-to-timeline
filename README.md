@@ -24,6 +24,15 @@ ANTHROPIC_API_KEY=your_key
 
 ## Run
 
+First, setup your environment:
+
+```bash
+cp .env.example .env
+# Edit .env and add: ANTHROPIC_API_KEY=your_actual_key
+```
+
+Then run the CLI with scene and duration:
+
 ```bash
 npm run dev -- --scene "A woman walks in a neon alley" --duration 10
 ```
@@ -52,10 +61,48 @@ Disable clipboard copy:
 npm run dev -- --scene "..." --duration 12 --no-copy
 ```
 
+### Example: Hacker Control Room Scene (with voiceover)
+
+To test with a more complex scene, use the included fixture:
+
+```bash
+npm run dev -- --scene "A dark, cluttered control room or hacker's den. Multiple monitors display stock market crashes, chaotic news feeds, and maps with spreading red alerts." --duration 12 --transcript "A shadowy figure whispers urgently about the spreading crisis. Markets are collapsing worldwide."
+```
+
+Or create a file `scene.txt` and pass it in:
+
+```bash
+npm run dev -- --scene "$(cat scene.txt)" --duration 12 --no-copy
+```
+
+Quick test with included example:
+
+```bash
+chmod +x run-hacker-example.sh
+./run-hacker-example.sh
+```
+
 ## Test
+
+Unit tests (no API required):
 
 ```bash
 npm test
+```
+
+Integration tests with Anthropic API:
+
+```bash
+# Setup .env with ANTHROPIC_API_KEY
+cp .env.example .env
+# Edit .env and add your key
+
+# Run integration tests
+INTEGRATION_TEST=1 npm run test:integration
+
+# Or use the helper script
+chmod +x test-with-api.sh
+source .env && ./test-with-api.sh
 ```
 
 ## Build

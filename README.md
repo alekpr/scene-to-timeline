@@ -154,3 +154,95 @@ source .env && ./test-with-api.sh
 ```bash
 npm run build
 ```
+
+---
+
+## **Phase 3 — Web UI** 🌐
+
+A modern web interface for timeline generation with drag-and-drop image upload, visual timeline preview, and one-click field copying.
+
+### Start the Web Server
+
+```bash
+npm run dev:web
+```
+
+The UI will be available at **http://localhost:3000**
+
+### Web UI Features
+
+✨ **Interactive Form**
+- Scene description textarea (Thai/English support)
+- Duration input (seconds)
+- Optional FPS override
+- Optional segment count override
+- Optional voiceover transcript
+- Optional reference image via drag-and-drop or file picker
+
+📊 **Real-time Results**
+- Global prompt for the scene
+- Local prompts (segment-by-segment breakdown)
+- Segment lengths and max frames
+- Raw timeline JSON data
+
+📈 **Visual Timeline Preview**
+- ASCII-art timeline in terminal style
+- Percentage breakdown per segment
+- Frame counts and assigned colors
+- Interactive preview box
+
+📋 **One-Click Copy**
+- Copy each field individually to clipboard
+- Copy entire JSON payload
+- Feedback message on successful copy
+
+### API Endpoint
+
+Post your data directly to the REST API:
+
+```bash
+curl -X POST http://localhost:3000/api/generate-timeline \
+  -H "Content-Type: application/json" \
+  -d '{
+    "scene": "A mysterious figure in fog at a cliff edge",
+    "duration": 8,
+    "fps": 24,
+    "segments": 3,
+    "transcript": "Optional voiceover text",
+    "image": "data:image/jpeg;base64,...",
+    "preview": true
+  }'
+```
+
+**Response Example:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "payload": {
+      "globalPrompt": "...",
+      "localPrompts": "...",
+      "segmentLengths": "72 | 48 | 72",
+      "maxFrames": 192,
+      "timelineData": {
+        "segments": [...]
+      },
+      "summary": {
+        "durationSeconds": 8,
+        "fps": 24,
+        "segmentCount": 3
+      }
+    },
+    "previewOutput": "...",
+    "summary": {...}
+  }
+}
+```
+
+### Development
+
+- Backend: Express.js (TypeScript)
+- Frontend: HTML5 + CSS3 + Vanilla JavaScript
+- Static serving from `public/` directory
+- CORS enabled for cross-origin requests

@@ -55,6 +55,38 @@ Both image and transcript:
 npm run dev -- --scene "A woman walks in a neon alley" --duration 10 --image ./reference.jpg --transcript "She walks..."
 ```
 
+**Phase 2 — Advanced Options**
+
+Custom FPS (default: 24):
+
+```bash
+npm run dev -- --scene "..." --duration 12 --fps 30
+```
+
+Override segment count (default: duration/3):
+
+```bash
+npm run dev -- --scene "..." --duration 12 --segments 6
+```
+
+Save output to JSON file:
+
+```bash
+npm run dev -- --scene "..." --duration 12 --output timeline.json
+```
+
+Show timeline preview in terminal:
+
+```bash
+npm run dev -- --scene "..." --duration 12 --preview
+```
+
+Combine all options:
+
+```bash
+npm run dev -- --scene "..." --duration 12 --fps 30 --segments 5 --image ref.jpg --transcript "VO..." --output result.json --preview
+```
+
 Disable clipboard copy:
 
 ```bash

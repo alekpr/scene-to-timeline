@@ -1,0 +1,36 @@
+========================================
+ PROMPT RELAY ENCODE (TIMELINE) OUTPUT
+========================================
+
+[GLOBAL PROMPT]
+Use field: global_prompt
+----------------------------------------
+Over-the-shoulder shot, dark control room, multiple monitors glowing blue and red, unseen operator at keyboard, 4K cinematic, HDR, hyper-realistic
+
+[LOCAL PROMPTS]
+Use field: local_prompts
+----------------------------------------
+Static view of cluttered desk, hands on keyboard, wall of monitors showing politician's face centered | Hands start typing furiously, deepfaked politician begins speaking on central screen | Camera pushes forward dramatically, stock charts plummet green to red on side monitors | World map ignites with spreading red conflict zones, politician continues inflammatory speech
+
+[SEGMENT LENGTHS]
+Use field: segment_lengths
+----------------------------------------
+48 | 72 | 72 | 96
+
+[MAX FRAMES]
+Use field: max_frames
+----------------------------------------
+288
+
+[TIMELINE DATA JSON]
+Use field: timeline_data
+----------------------------------------
+{"segments":[{"prompt":"Static view of cluttered desk, hands on keyboard, wall of monitors showing politician's face centered","length":48,"color":"#4f8edc"},{"prompt":"Hands start typing furiously, deepfaked politician begins speaking on central screen","length":72,"color":"#e07b3a"},{"prompt":"Camera pushes forward dramatically, stock charts plummet green to red on side monitors","length":72,"color":"#d9534f"},{"prompt":"World map ignites with spreading red conflict zones, politician continues inflammatory speech","length":96,"color":"#5cb85c"}]}
+
+========================================
+SUMMARY
+========================================
+Duration   : 12 seconds
+Segments   : 4
+FPS        : 24
+Max Frames : 288

@@ -8,6 +8,10 @@ const CliSchema = z.object({
   duration: z.coerce.number().positive(),
   image: z.string().trim().min(1).optional(),
   transcript: z.string().trim().min(1).optional(),
+  fps: z.coerce.number().positive().optional(),
+  segments: z.coerce.number().min(1).optional(),
+  output: z.string().trim().min(1).optional(),
+  preview: z.boolean().optional(),
 });
 
 export async function validateAndPrepareInput(options: CliOptions): Promise<ValidatedInput> {
@@ -37,8 +41,11 @@ export async function validateAndPrepareInput(options: CliOptions): Promise<Vali
   return {
     sceneOverview: parsed.scene,
     durationSeconds: parsed.duration,
-    fps: DEFAULT_FPS,
+    fps: parsed.fps ?? DEFAULT_FPS,
+    requestedSegmentCount: parsed.segments,
     referenceImage,
     voiceoverTranscript: parsed.transcript,
+    outputPath: parsed.output,
+    previewMode: parsed.preview ?? false,
   };
 }

@@ -4,7 +4,10 @@ export function calcMaxFrames(durationSeconds: number, fps: number): number {
   return Math.round(durationSeconds * fps);
 }
 
-export function calcSegmentCount(durationSeconds: number): number {
+export function calcSegmentCount(durationSeconds: number, override?: number): number {
+  if (override !== undefined && override > 0) {
+    return override;
+  }
   return Math.max(1, Math.round(durationSeconds / DEFAULT_SEGMENT_SECONDS));
 }
 

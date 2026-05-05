@@ -40,7 +40,7 @@ export async function analyzeScene(input: ValidatedInput): Promise<AnalyzerResul
     );
   }
 
-  const segmentCount = calcSegmentCount(input.durationSeconds);
+  const segmentCount = calcSegmentCount(input.durationSeconds, input.requestedSegmentCount);
   const secondsPerSegment = input.durationSeconds / segmentCount;
 
   const userText = [

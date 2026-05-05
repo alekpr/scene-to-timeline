@@ -3,6 +3,10 @@ export interface CliOptions {
   duration?: string;
   image?: string;
   transcript?: string;
+  fps?: string;
+  segments?: string;
+  output?: string;
+  preview?: boolean;
   copy?: boolean;
 }
 
@@ -10,12 +14,15 @@ export interface ValidatedInput {
   sceneOverview: string;
   durationSeconds: number;
   fps: number;
+  requestedSegmentCount?: number;
   referenceImage?: {
     base64: string;
     mediaType: "image/jpeg" | "image/png";
     originalPath: string;
   };
   voiceoverTranscript?: string;
+  outputPath?: string;
+  previewMode?: boolean;
 }
 
 export interface SceneSegment {

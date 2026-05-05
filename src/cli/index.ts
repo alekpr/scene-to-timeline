@@ -9,6 +9,7 @@ import { exportTimelineJSON } from "../core/export.js";
 import { formatTimelineOutput } from "../core/formatter.js";
 import { formatTimelinePreview } from "../core/preview.js";
 import { validateAndPrepareInput } from "../core/validator.js";
+import { readStdin } from "../utils/stdin.js";
 import { AppError, type CliOptions } from "../domain/types.js";
 
 const program = new Command();
@@ -16,7 +17,7 @@ const program = new Command();
 program
   .name("scene-to-timeline")
   .description("Generate Prompt Relay Timeline fields from scene descriptions")
-  .requiredOption("--scene <text>", "Scene overview text (Thai/English)")
+  .option("--scene <text>", "Scene overview text (Thai/English, or pipe via stdin)")
   .requiredOption("--duration <seconds>", "Target video duration in seconds")
   .option("--image <path>", "Optional reference image (.jpg/.png)")
   .option("--transcript <text>", "Optional voiceover transcript (Thai/English)")
@@ -28,6 +29,14 @@ program
 
 async function run(): Promise<void> {
   const raw = program.parse().opts<CliOptions>();
+
+  // Support stdin: if no scene provided, read from stdin
+  if (!raw.scene) {
+    const stdinData = await readStdin();
+    if (stdinData) {
+      raw.scene = stdinData;
+    }
+  }
 
   const validated = await validateAndPrepareInput(raw);
   const analysis = await analyzeScene(validated);

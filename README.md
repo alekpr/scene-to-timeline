@@ -87,6 +87,18 @@ Combine all options:
 npm run dev -- --scene "..." --duration 12 --fps 30 --segments 5 --image ref.jpg --transcript "VO..." --output result.json --preview
 ```
 
+**Pipe scene from stdin:**
+
+```bash
+cat scene.txt | npm run dev -- --duration 12
+```
+
+**Pipe both scene and voiceover:**
+
+```bash
+cat scene.txt | npm run dev -- --duration 12 --transcript "$(cat voiceover.txt)"
+```
+
 Disable clipboard copy:
 
 ```bash

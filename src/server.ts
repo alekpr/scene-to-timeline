@@ -336,11 +336,16 @@ app.post("/api/generate-and-run-runninghub", async (req: Request, res: Response)
 
     let uploadedImageFileName: string | undefined;
     console.log("[generate-and-run] image field type:", typeof image, "| value prefix:", typeof image === "string" ? image.slice(0, 30) : image);
-    if (typeof image === "string" && image.startsWith("data:image/")) {
-      uploadedImageFileName = await uploadImageToRunningHub(runningHubApiKey, image);
-    } else {
-      console.warn("[generate-and-run] image not sent or invalid — skipping upload");
+    
+    if (!image || (typeof image !== "string") || !image.startsWith("data:image/")) {
+      throw new AppError(
+        "Reference image is required for RunningHub workflow.",
+        "IMAGE_REQUIRED",
+        "Please select a reference image (JPG or PNG) to use as a starting point for video generation.",
+      );
     }
+
+    uploadedImageFileName = await uploadImageToRunningHub(runningHubApiKey, image);
 
     const nodeInfoList = buildRunningHubNodeInfoList(payload, uploadedImageFileName);
     const selectedWorkflowId = typeof workflowId === "string" && workflowId.trim()

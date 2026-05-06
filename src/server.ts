@@ -93,10 +93,18 @@ async function uploadImageToRunningHub(apiKey: string, imageDataUri: string): Pr
     code?: number;
     message?: string;
     msg?: string;
-    data?: { filename?: string; fileName?: string };
+    data?: Record<string, unknown>;
   }>(await response.json());
 
-  const uploadedFileName = result.data?.filename || result.data?.fileName;
+  console.log("[uploadImageToRunningHub] raw response:", JSON.stringify(result));
+
+  const data = result.data as Record<string, unknown> | undefined;
+  const uploadedFileName =
+    (typeof data?.filename === "string" ? data.filename : undefined) ||
+    (typeof data?.fileName === "string" ? data.fileName : undefined) ||
+    (typeof data?.file_name === "string" ? data.file_name : undefined) ||
+    (typeof data?.name === "string" ? data.name : undefined);
+
   if (!uploadedFileName) {
     throw new AppError(
       "RunningHub upload response missing filename.",
@@ -104,6 +112,8 @@ async function uploadImageToRunningHub(apiKey: string, imageDataUri: string): Pr
       `Upload response: ${JSON.stringify(result).slice(0, 500)}`,
     );
   }
+
+  console.log("[uploadImageToRunningHub] uploadedFileName:", uploadedFileName);
 
   return uploadedFileName;
 }
@@ -140,11 +150,14 @@ function buildRunningHubNodeInfoList(
   ];
 
   if (uploadedImageFileName) {
+    console.log("[buildRunningHubNodeInfoList] adding image node 85:", uploadedImageFileName);
     nodeInfoList.push({
       nodeId: "85",
       fieldName: "image",
       fieldValue: uploadedImageFileName,
     });
+  } else {
+    console.warn("[buildRunningHubNodeInfoList] no uploadedImageFileName — node 85 not added, workflow will use default image");
   }
 
   return nodeInfoList;
@@ -322,8 +335,11 @@ app.post("/api/generate-and-run-runninghub", async (req: Request, res: Response)
     });
 
     let uploadedImageFileName: string | undefined;
+    console.log("[generate-and-run] image field type:", typeof image, "| value prefix:", typeof image === "string" ? image.slice(0, 30) : image);
     if (typeof image === "string" && image.startsWith("data:image/")) {
       uploadedImageFileName = await uploadImageToRunningHub(runningHubApiKey, image);
+    } else {
+      console.warn("[generate-and-run] image not sent or invalid — skipping upload");
     }
 
     const nodeInfoList = buildRunningHubNodeInfoList(payload, uploadedImageFileName);
@@ -331,31 +347,59 @@ app.post("/api/generate-and-run-runninghub", async (req: Request, res: Response)
       ? workflowId.trim()
       : RUNNINGHUB_WORKFLOW_ID;
 
-    const createResult = await startRunningHubTask({
-      apiKey: runningHubApiKey,
-      workflowId: selectedWorkflowId,
-      nodeInfoList,
-    });
+    let createdTaskId: string | number | undefined;
+    let createResult: RunningHubCreateResponse | undefined;
+    try {
+      createResult = await startRunningHubTask({
+        apiKey: runningHubApiKey,
+        workflowId: selectedWorkflowId,
+        nodeInfoList,
+      });
 
-    if (createResult.code !== 0) {
-      throw new AppError(
-        `RunningHub rejected task: ${createResult.msg || createResult.message || "Unknown error"}`,
-        "RUNNINGHUB_CREATE_REJECTED",
-        createResult.data?.promptTips
-          ? `promptTips: ${String(createResult.data.promptTips).slice(0, 400)}`
-          : "Check workflowId, nodeInfoList mapping, and API key/account balance.",
-      );
-    }
+      if (createResult.code !== 0) {
+        throw new AppError(
+          `RunningHub rejected task: ${createResult.msg || createResult.message || "Unknown error"}`,
+          "RUNNINGHUB_CREATE_REJECTED",
+          createResult.data?.promptTips
+            ? `promptTips: ${String(createResult.data.promptTips).slice(0, 400)}`
+            : "Check workflowId, nodeInfoList mapping, and API key/account balance.",
+        );
+      }
 
-    const createdTaskId = createResult.data?.taskId;
-    if (createdTaskId === undefined || createdTaskId === null || String(createdTaskId).trim() === "") {
-      throw new AppError(
-        "RunningHub returned success but no taskId.",
-        "RUNNINGHUB_TASKID_MISSING",
-        createResult.data?.promptTips
-          ? `promptTips: ${String(createResult.data.promptTips).slice(0, 400)}`
-          : `Raw response: ${JSON.stringify(createResult).slice(0, 500)}`,
-      );
+      createdTaskId = createResult.data?.taskId;
+      if (createdTaskId === undefined || createdTaskId === null || String(createdTaskId).trim() === "") {
+        throw new AppError(
+          "RunningHub returned success but no taskId.",
+          "RUNNINGHUB_TASKID_MISSING",
+          createResult.data?.promptTips
+            ? `promptTips: ${String(createResult.data.promptTips).slice(0, 400)}`
+            : `Raw response: ${JSON.stringify(createResult).slice(0, 500)}`,
+        );
+      }
+    } catch (error) {
+      if (createdTaskId) {
+        console.warn(
+          "[generate-and-run] task creation/validation failed, attempting to cancel task",
+          createdTaskId,
+        );
+        try {
+          await fetch(`${RUNNINGHUB_BASE_URL}/task/openapi/cancel`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${runningHubApiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              apiKey: runningHubApiKey,
+              taskId: String(createdTaskId),
+            }),
+          });
+          console.log("[generate-and-run] task cancelled successfully");
+        } catch (cancelError) {
+          console.error("[generate-and-run] failed to cancel task:", cancelError);
+        }
+      }
+      throw error;
     }
 
     res.json({

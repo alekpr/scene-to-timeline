@@ -90,12 +90,16 @@ export async function analyzeScene(input: ValidatedInput): Promise<AnalyzerResul
 
   let parsedJson: unknown;
   try {
-    parsedJson = JSON.parse(unwrapJsonText(textBlock.text));
-  } catch {
+    const wrappedText = unwrapJsonText(textBlock.text);
+    console.log("[analyzer] Claude raw response:", textBlock.text.slice(0, 500));
+    console.log("[analyzer] After unwrapJsonText:", wrappedText.slice(0, 500));
+    parsedJson = JSON.parse(wrappedText);
+  } catch (error) {
+    console.error("[analyzer] JSON parse failed:", error);
     throw new AppError(
       "Analyzer response is not valid JSON.",
       "ANALYZER_INVALID_JSON",
-      "Simplify scene text or rerun. The model must return strict JSON only.",
+      `Response: ${textBlock.text.slice(0, 300)}`,
     );
   }
 

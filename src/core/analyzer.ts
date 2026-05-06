@@ -93,8 +93,27 @@ export async function analyzeScene(input: ValidatedInput): Promise<AnalyzerResul
     const wrappedText = unwrapJsonText(textBlock.text);
     console.log("[analyzer] Claude raw response:", textBlock.text.slice(0, 500));
     console.log("[analyzer] After unwrapJsonText:", wrappedText.slice(0, 500));
+    
+    // Check if Claude rejected the request due to content policy
+    if (
+      wrappedText.toLowerCase().includes("cannot") ||
+      wrappedText.toLowerCase().includes("unable") ||
+      wrappedText.toLowerCase().includes("policy")
+    ) {
+      if (!wrappedText.startsWith("{")) {
+        throw new AppError(
+          "Content policy violation: Your scene description cannot be processed.",
+          "ANALYZER_POLICY_REJECTED",
+          wrappedText.slice(0, 300),
+        );
+      }
+    }
+    
     parsedJson = JSON.parse(wrappedText);
   } catch (error) {
+    if (error instanceof AppError) {
+      throw error;
+    }
     console.error("[analyzer] JSON parse failed:", error);
     throw new AppError(
       "Analyzer response is not valid JSON.",

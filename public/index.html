@@ -702,6 +702,7 @@
       let elapsedTimer = null;
       let startedAtMs = 0;
       let activeTaskId = "";
+      let selectedImageFile = null;
 
       // Image Upload Handlers
       imageUpload.addEventListener("click", () => imageInput.click());
@@ -738,6 +739,7 @@
           return;
         }
 
+        selectedImageFile = file;
         const reader = new FileReader();
         reader.onload = (e) => {
           imagePreview.src = e.target.result;
@@ -783,7 +785,7 @@
       }
 
       async function getImageDataUri() {
-        const imageFile = imageInput.files[0];
+        const imageFile = selectedImageFile || imageInput.files[0];
         if (!imageFile) {
           return null;
         }

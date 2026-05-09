@@ -3,6 +3,7 @@ import {
   calcMaxFrames,
   calcSegmentCount,
   distributeFramesByWeights,
+  estimateMotionIntensity,
   inferSegmentCountFromScene,
 } from "../src/utils/frames.js";
 
@@ -34,6 +35,28 @@ describe("frames utility", () => {
       12,
     );
     expect(count).toBeGreaterThan(4);
+  });
+
+  it("rates dynamic scenes as more motion-intense than static ones", () => {
+    const staticScore = estimateMotionIntensity("A man sits still in silence by the window");
+    const dynamicScore = estimateMotionIntensity(
+      "A stunt driver accelerates, swerves, crashes through glass, and the camera pushes in",
+    );
+
+    expect(dynamicScore).toBeGreaterThan(staticScore);
+  });
+
+  it("biases action scenes toward more segments when duration is equal", () => {
+    const staticCount = inferSegmentCountFromScene(
+      "A man sits still in silence by the window watching the rain.",
+      12,
+    );
+    const actionCount = inferSegmentCountFromScene(
+      "A stunt driver accelerates, swerves, crashes through glass, then dives out as the camera tracks left.",
+      12,
+    );
+
+    expect(actionCount).toBeGreaterThan(staticCount);
   });
 
   it("clamps inferred count for short duration", () => {

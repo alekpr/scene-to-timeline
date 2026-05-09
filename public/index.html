@@ -496,7 +496,7 @@
                   id="duration"
                   min="1"
                   max="300"
-                  value="12"
+                  value="8"
                   required
                 />
               </div>
@@ -507,6 +507,7 @@
                   id="fps"
                   min="1"
                   max="120"
+                  value="24"
                   placeholder="Default: 24"
                 />
               </div>
@@ -514,6 +515,13 @@
 
             <!-- Segments & Transcript Row -->
             <div class="form-row">
+              <div class="form-group">
+                <label for="workflowType">RunningHub Workflow</label>
+                <select id="workflowType">
+                  <option value="ltx" selected>LTX 2.3</option>
+                  <option value="wan">Wan (legacy)</option>
+                </select>
+              </div>
               <div class="form-group">
                 <label for="segments">Segments Override (optional)</label>
                 <input
@@ -524,6 +532,19 @@
                   placeholder="Leave empty for auto (scene continuity + duration)"
                 />
               </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="motionProfile">RunningHub Motion Profile</label>
+                <select id="motionProfile">
+                  <option value="fast">Fast</option>
+                  <option value="balanced" selected>Balanced</option>
+                  <option value="cinematic">Cinematic</option>
+                  <option value="template-like">Template-like (LTX Experimental)</option>
+                </select>
+              </div>
+              <div class="form-group"></div>
             </div>
 
             <!-- Voiceover Transcript -->
@@ -772,14 +793,18 @@
         const scene = document.getElementById("scene").value.trim();
         const duration = document.getElementById("duration").value;
         const fps = document.getElementById("fps").value || null;
+        const workflowType = document.getElementById("workflowType").value;
         const segments = document.getElementById("segments").value || null;
+        const motionProfile = document.getElementById("motionProfile").value;
         const transcript = document.getElementById("transcript").value.trim();
 
         return {
           scene,
           duration,
           fps,
+          workflowType,
           segments,
+          motionProfile,
           transcript,
         };
       }
@@ -806,7 +831,7 @@
           setButtonsDisabled(true);
 
           const formPayload = buildFormPayload();
-          const { scene, duration, fps, segments, transcript } = formPayload;
+          const { scene, duration, fps, segments, transcript, workflowType } = formPayload;
 
           if (!scene || !duration) {
             throw new Error("Scene and Duration are required");
@@ -819,6 +844,7 @@
             duration: parseFloat(duration),
             fps: fps ? parseFloat(fps) : undefined,
             segments: segments ? parseFloat(segments) : undefined,
+            workflowType,
             transcript: transcript || undefined,
             image: imageBase64,
             preview: true,
@@ -961,7 +987,7 @@
           setButtonsDisabled(true);
 
           const formPayload = buildFormPayload();
-          const { scene, duration, fps, segments, transcript } = formPayload;
+          const { scene, duration, fps, segments, transcript, motionProfile, workflowType } = formPayload;
 
           if (!scene || !duration) {
             throw new Error("Scene and Duration are required");
@@ -974,6 +1000,8 @@
             duration: parseFloat(duration),
             fps: fps ? parseFloat(fps) : undefined,
             segments: segments ? parseFloat(segments) : undefined,
+            workflowType,
+            motionProfile,
             transcript: transcript || undefined,
             image: imageBase64,
           };
@@ -1032,7 +1060,9 @@
       }
 
       async function startRunningHubPolling(taskId) {
-        const maxAttempts = 90;
+        const pollingIntervalMs = 5000;
+        const maxPollingDurationMs = 30 * 60 * 1000;
+        const maxAttempts = Math.ceil(maxPollingDurationMs / pollingIntervalMs);
         let attempts = 0;
 
         async function checkOnce() {
@@ -1089,7 +1119,7 @@
           }
 
           if (attempts >= maxAttempts) {
-            throw new Error("Polling timeout: task is taking too long");
+            throw new Error("Polling timeout after 30 minutes: task is taking too long");
           }
 
           return false;
@@ -1118,7 +1148,7 @@
             cloudStatus.textContent = "Status: failed";
             cloudProgressBar.style.width = "100%";
           }
-        }, 5000);
+        }, pollingIntervalMs);
       }
 
       function displayResults(data) {

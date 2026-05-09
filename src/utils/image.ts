@@ -23,6 +23,34 @@ export async function loadImageAsBase64(imageInput: string): Promise<{
   return loadImageFromFile(imageInput);
 }
 
+export async function normalizeImageDataUriForTarget(
+  dataUri: string,
+  targetWidth: number,
+  targetHeight: number,
+): Promise<{
+  buffer: Buffer;
+  mediaType: "image/jpeg";
+}> {
+  const parsed = parseDataUri(dataUri);
+  const inputBuffer = Buffer.from(parsed.base64, "base64");
+  const outputBuffer = await sharp(inputBuffer, { failOn: "error" })
+    .rotate()
+    .resize({
+      width: targetWidth,
+      height: targetHeight,
+      fit: "cover",
+      position: "centre",
+      withoutEnlargement: false,
+    })
+    .jpeg({ quality: 90 })
+    .toBuffer();
+
+  return {
+    buffer: outputBuffer,
+    mediaType: "image/jpeg",
+  };
+}
+
 /**
  * Parse a data URI and extract base64 + media type
  */

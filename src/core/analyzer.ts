@@ -51,6 +51,11 @@ export async function analyzeScene(input: ValidatedInput): Promise<AnalyzerResul
     `Target segments: ${segmentCount} (approx. ${secondsPerSegment.toFixed(2)}s each)`,
     `Reference image: ${input.referenceImage ? "attached" : "none"}`,
     input.voiceoverTranscript ? `Voiceover transcript:\n${input.voiceoverTranscript}` : "No voiceover provided.",
+    "Motion guidance:",
+    "- Prefer concrete action verbs over generic changes.",
+    "- When the scene is active, describe speed, direction, intensity, and camera motion.",
+    "- Reserve calm descriptions for truly static beats; otherwise imply momentum or anticipation.",
+    "- High-weight segments should feel more kinetic and visually eventful than low-weight segments.",
     "Generate the timeline breakdown now.",
   ].join("\n");
 

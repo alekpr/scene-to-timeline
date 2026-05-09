@@ -6,21 +6,34 @@ import { fileURLToPath } from "url";
 import { validateAndPrepareInput } from "./core/validator.js";
 import { analyzeScene } from "./core/analyzer.js";
 import { buildTimelinePayload } from "./core/builder.js";
-import { formatTimelineOutput } from "./core/formatter.js";
 import { formatTimelinePreview } from "./core/preview.js";
+import {
+  buildRunningHubNodeInfoList,
+  normalizeMotionProfile,
+  RUNNINGHUB_WORKFLOW_HEIGHT,
+  RUNNINGHUB_WORKFLOW_WIDTH,
+  type RunningHubNodeInfo,
+} from "./core/runninghub.js";
+import {
+  LTX_WORKFLOW_HEIGHT,
+  LTX_WORKFLOW_WIDTH,
+} from "./core/ltxRunninghub.js";
+import {
+  buildRunningHubExecutionPlan,
+  getRunningHubTargetDimensions,
+  normalizeRunningHubWorkflowType,
+  resolveRunningHubValidationInput,
+  type RunningHubWorkflowType,
+} from "./core/runninghubWorkflow.js";
 import { AppError } from "./domain/types.js";
+import { normalizeImageDataUriForTarget } from "./utils/image.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const RUNNINGHUB_BASE_URL = process.env.RUNNINGHUB_BASE_URL || "https://www.runninghub.ai";
 const RUNNINGHUB_WORKFLOW_ID =
   process.env.RUNNINGHUB_WORKFLOW_ID || "2051573831675990018";
-
-interface RunningHubNodeInfo {
-  nodeId: string;
-  fieldName: string;
-  fieldValue: string | number | boolean;
-}
+const RUNNINGHUB_LTX_WORKFLOW_ID = process.env.RUNNINGHUB_LTX_WORKFLOW_ID || "";
 
 interface RunningHubCreateResponse {
   code: number;
@@ -42,30 +55,22 @@ interface RunningHubOutputItem {
   [key: string]: unknown;
 }
 
-function parseImageDataUri(dataUri: string): { mediaType: string; buffer: Buffer } {
-  const match = dataUri.match(/^data:(image\/(?:png|jpeg));base64,(.+)$/);
-  if (!match) {
-    throw new AppError(
-      "Invalid image data URI format.",
-      "INVALID_IMAGE_DATA_URI",
-      "Expected format: data:image/jpeg;base64,... or data:image/png;base64,...",
-    );
-  }
-
-  const [, mediaType, base64] = match;
-  return {
-    mediaType,
-    buffer: Buffer.from(base64, "base64"),
-  };
-}
-
 function normalizeRunningHubResult<T>(json: unknown): T {
   return json as T;
 }
 
-async function uploadImageToRunningHub(apiKey: string, imageDataUri: string): Promise<string> {
-  const { mediaType, buffer } = parseImageDataUri(imageDataUri);
-  const extension = mediaType === "image/png" ? "png" : "jpg";
+async function uploadImageToRunningHub(
+  apiKey: string,
+  imageDataUri: string,
+  workflowType: RunningHubWorkflowType,
+): Promise<string> {
+  const { width: targetWidth, height: targetHeight } = getRunningHubTargetDimensions(workflowType);
+  const { mediaType, buffer } = await normalizeImageDataUriForTarget(
+    imageDataUri,
+    targetWidth,
+    targetHeight,
+  );
+  const extension = "jpg";
   const fileBytes = new Uint8Array(buffer);
   const file = new File([fileBytes], `scene-input.${extension}`, { type: mediaType });
 
@@ -99,11 +104,15 @@ async function uploadImageToRunningHub(apiKey: string, imageDataUri: string): Pr
   console.log("[uploadImageToRunningHub] raw response:", JSON.stringify(result));
 
   const data = result.data as Record<string, unknown> | undefined;
-  const uploadedFileName =
-    (typeof data?.filename === "string" ? data.filename : undefined) ||
-    (typeof data?.fileName === "string" ? data.fileName : undefined) ||
-    (typeof data?.file_name === "string" ? data.file_name : undefined) ||
-    (typeof data?.name === "string" ? data.name : undefined);
+  const uploadedFileName = [
+    data?.name,
+    data?.path,
+    data?.filePath,
+    data?.file_path,
+    data?.filename,
+    data?.fileName,
+    data?.file_name,
+  ].find((value): value is string => typeof value === "string" && value.trim().length > 0);
 
   if (!uploadedFileName) {
     throw new AppError(
@@ -116,51 +125,6 @@ async function uploadImageToRunningHub(apiKey: string, imageDataUri: string): Pr
   console.log("[uploadImageToRunningHub] uploadedFileName:", uploadedFileName);
 
   return uploadedFileName;
-}
-
-function buildRunningHubNodeInfoList(
-  payload: {
-    globalPrompt: string;
-    maxFrames: number;
-    timelineData: { segments: Array<{ prompt: string; length: number; color: string }> };
-    localPrompts: string;
-    summary: { fps: number };
-  },
-  uploadedImageFileName?: string,
-): RunningHubNodeInfo[] {
-  const segmentLengthsCsv = payload.timelineData.segments.map((segment) => segment.length).join(", ");
-  const timelineJson = JSON.stringify(payload.timelineData);
-
-  const nodeInfoList: RunningHubNodeInfo[] = [
-    { nodeId: "117", fieldName: "global_prompt", fieldValue: payload.globalPrompt },
-    { nodeId: "117", fieldName: "max_frames", fieldValue: payload.maxFrames + 1 },
-    { nodeId: "117", fieldName: "timeline_data", fieldValue: timelineJson },
-    { nodeId: "117", fieldName: "local_prompts", fieldValue: payload.localPrompts },
-    { nodeId: "117", fieldName: "segment_lengths", fieldValue: segmentLengthsCsv },
-    { nodeId: "117", fieldName: "fps", fieldValue: payload.summary.fps },
-    { nodeId: "129", fieldName: "global_prompt", fieldValue: payload.globalPrompt },
-    { nodeId: "129", fieldName: "max_frames", fieldValue: payload.maxFrames + 1 },
-    { nodeId: "129", fieldName: "timeline_data", fieldValue: timelineJson },
-    { nodeId: "129", fieldName: "local_prompts", fieldValue: payload.localPrompts },
-    { nodeId: "129", fieldName: "segment_lengths", fieldValue: segmentLengthsCsv },
-    { nodeId: "129", fieldName: "fps", fieldValue: payload.summary.fps },
-    { nodeId: "79", fieldName: "length", fieldValue: payload.maxFrames + 1 },
-    { nodeId: "121", fieldName: "length", fieldValue: payload.maxFrames + 1 },
-    { nodeId: "108", fieldName: "frame_rate", fieldValue: payload.summary.fps },
-  ];
-
-  if (uploadedImageFileName) {
-    console.log("[buildRunningHubNodeInfoList] adding image node 85:", uploadedImageFileName);
-    nodeInfoList.push({
-      nodeId: "85",
-      fieldName: "image",
-      fieldValue: uploadedImageFileName,
-    });
-  } else {
-    console.warn("[buildRunningHubNodeInfoList] no uploadedImageFileName — node 85 not added, workflow will use default image");
-  }
-
-  return nodeInfoList;
 }
 
 async function startRunningHubTask(params: {
@@ -202,6 +166,9 @@ app.use(express.urlencoded({ limit: "50mb" }));
 
 // Serve static files (frontend)
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const isDirectExecution = process.argv[1]
+  ? path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+  : false;
 app.use(express.static(path.join(__dirname, "../public")));
 
 // Health check endpoint
@@ -219,6 +186,7 @@ app.post("/api/generate-timeline", async (req: Request, res: Response) => {
       transcript,
       fps,
       segments,
+      workflowType,
       preview = true,
     } = req.body;
 
@@ -230,17 +198,18 @@ app.post("/api/generate-timeline", async (req: Request, res: Response) => {
     }
 
     // Prepare validated input
-    const validated = await validateAndPrepareInput({
-      scene,
-      duration: String(duration),
-      image: image || undefined,
-      transcript: transcript || undefined,
-      fps: fps ? String(fps) : undefined,
-      segments: segments ? String(segments) : undefined,
-      output: undefined,
-      preview: false,
-      copy: false,
-    });
+    const selectedWorkflowType = normalizeRunningHubWorkflowType(workflowType);
+    const validated = await validateAndPrepareInput(
+      resolveRunningHubValidationInput({
+        scene,
+        duration: String(duration),
+        image: image || undefined,
+        transcript: transcript || undefined,
+        fps: fps ? String(fps) : undefined,
+        segments: segments ? String(segments) : undefined,
+        workflowType: selectedWorkflowType,
+      }),
+    );
 
     // Analyze scene with AI
     const analysis = await analyzeScene(validated);
@@ -298,6 +267,8 @@ app.post("/api/generate-and-run-runninghub", async (req: Request, res: Response)
       fps,
       segments,
       workflowId,
+      motionProfile,
+      workflowType,
     } = req.body;
 
     if (!scene || !duration) {
@@ -315,17 +286,17 @@ app.post("/api/generate-and-run-runninghub", async (req: Request, res: Response)
       );
     }
 
-    const validated = await validateAndPrepareInput({
-      scene,
-      duration: String(duration),
-      image: image || undefined,
-      transcript: transcript || undefined,
-      fps: fps ? String(fps) : undefined,
-      segments: segments ? String(segments) : undefined,
-      output: undefined,
-      preview: false,
-      copy: false,
-    });
+    const validated = await validateAndPrepareInput(
+      resolveRunningHubValidationInput({
+        scene,
+        duration: String(duration),
+        image: image || undefined,
+        transcript: transcript || undefined,
+        fps: fps ? String(fps) : undefined,
+        segments: segments ? String(segments) : undefined,
+        workflowType: normalizeRunningHubWorkflowType(workflowType),
+      }),
+    );
 
     const analysis = await analyzeScene(validated);
     const payload = buildTimelinePayload({
@@ -333,6 +304,7 @@ app.post("/api/generate-and-run-runninghub", async (req: Request, res: Response)
       durationSeconds: validated.durationSeconds,
       fps: validated.fps,
     });
+    const selectedWorkflowType = normalizeRunningHubWorkflowType(workflowType);
 
     let uploadedImageFileName: string | undefined;
     console.log("[generate-and-run] image field type:", typeof image, "| value prefix:", typeof image === "string" ? image.slice(0, 30) : image);
@@ -345,20 +317,32 @@ app.post("/api/generate-and-run-runninghub", async (req: Request, res: Response)
       );
     }
 
-    uploadedImageFileName = await uploadImageToRunningHub(runningHubApiKey, image);
+    uploadedImageFileName = await uploadImageToRunningHub(
+      runningHubApiKey,
+      image,
+      selectedWorkflowType,
+    );
 
-    const nodeInfoList = buildRunningHubNodeInfoList(payload, uploadedImageFileName);
-    const selectedWorkflowId = typeof workflowId === "string" && workflowId.trim()
-      ? workflowId.trim()
-      : RUNNINGHUB_WORKFLOW_ID;
+    const executionPlan = buildRunningHubExecutionPlan({
+      payload,
+      workflowType: selectedWorkflowType,
+      motionProfile,
+      uploadedImageFileName,
+      workflowId,
+      defaultWanWorkflowId: RUNNINGHUB_WORKFLOW_ID,
+      defaultLtxWorkflowId: RUNNINGHUB_LTX_WORKFLOW_ID,
+    });
+    console.log(`[generate-and-run] workflow type: ${executionPlan.selectedWorkflowType}`);
+    console.log("[generate-and-run] image node:", executionPlan.imageNodeValue ?? "<missing>");
+    console.log("[generate-and-run] frame mapping:", JSON.stringify(executionPlan.frameNodes));
 
     let createdTaskId: string | number | undefined;
     let createResult: RunningHubCreateResponse | undefined;
     try {
       createResult = await startRunningHubTask({
         apiKey: runningHubApiKey,
-        workflowId: selectedWorkflowId,
-        nodeInfoList,
+        workflowId: executionPlan.selectedWorkflowId,
+        nodeInfoList: executionPlan.nodeInfoList,
       });
 
       if (createResult.code !== 0) {
@@ -410,11 +394,13 @@ app.post("/api/generate-and-run-runninghub", async (req: Request, res: Response)
     res.json({
       success: true,
       data: {
-        workflowId: selectedWorkflowId,
+        workflowId: executionPlan.selectedWorkflowId,
         taskId: createdTaskId,
         taskStatus: createResult.data?.taskStatus,
         promptTips: createResult.data?.promptTips,
         uploadedImageFileName,
+        workflowType: executionPlan.selectedWorkflowType,
+        motionProfile: executionPlan.selectedMotionProfile,
         timeline: payload,
       },
     });
@@ -570,8 +556,12 @@ app.use(
 );
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`\n🌐 Scene-to-Timeline Web UI running at http://localhost:${PORT}`);
-  console.log(`📡 API endpoint: POST http://localhost:${PORT}/api/generate-timeline`);
-  console.log(`🔧 Press Ctrl+C to stop\n`);
-});
+if (isDirectExecution) {
+  app.listen(PORT, () => {
+    console.log(`\n🌐 Scene-to-Timeline Web UI running at http://localhost:${PORT}`);
+    console.log(`📡 API endpoint: POST http://localhost:${PORT}/api/generate-timeline`);
+    console.log(`🔧 Press Ctrl+C to stop\n`);
+  });
+}
+
+export { app };

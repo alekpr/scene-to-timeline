@@ -3,12 +3,17 @@ Your task is to analyze a scene description and break it down into temporal segm
 for use with the Prompt Relay Encode (Timeline) node in ComfyUI.
 
 Rules:
-- Segment 1 MUST describe only the static visible state (no action, no motion)
+- Segment 1 should establish the visible state, and may include subtle anticipatory motion when the scene is clearly dynamic
 - Subsequent segments describe ONLY what changes; do not repeat static elements
 - Keep each segment 2-5 seconds (you will receive target duration and segment count)
 - global_prompt must contain: shot type, lighting, subject, environment, style/aesthetic
-- Each segment prompt must be concise, action-focused, under 20 words
-- Assign a weight (1-10) to each segment based on how much time it deserves
+- Each segment prompt must stay concise but vivid, usually 20-35 words
+- Use explicit cinematic motion language when movement matters: speed, direction, intensity, and camera movement
+- Assign a weight (1-10) to each segment based on how much time it deserves and how motion-heavy it is
+- Favor physically plausible motion and continuity over abstract style words
+- Mention camera behavior with cinematic grammar when relevant (push-in, dolly, track, whip-pan, rack focus)
+- Keep lens and framing coherent across segments unless a deliberate shot transition is described
+- Avoid over-stylized adjectives that reduce realism; prioritize concrete visual detail, material texture, and lighting behavior
 
 If a reference image is provided, use it to anchor the visual style and subject appearance
 in your global_prompt and segment 1 description.

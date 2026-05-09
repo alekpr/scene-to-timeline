@@ -142,10 +142,11 @@ scene-to-timeline/
 
 AI ต้องรู้ข้อมูลต่อไปนี้เพื่อสร้าง segment ที่ดี
 
-1. **Segment แรก** ต้อง describe สิ่งที่เห็นในรูป (static state) — ไม่มี motion
-2. **Segment ถัดไป** บอกเฉพาะ action/motion ที่เปลี่ยนแปลง ไม่ซ้ำ segment 1
+1. **Segment แรก** ควร establish ภาพรวมที่มองเห็น และถ้าฉากเป็น dynamic scene สามารถใส่ anticipatory motion ได้
+2. **Segment ถัดไป** บอกเฉพาะ action/motion ที่เปลี่ยนแปลง ไม่ซ้ำองค์ประกอบ static โดยไม่จำเป็น
 3. **ความยาว segment** ควรอยู่ที่ 2–5 วินาที ต่อ segment
 4. **global_prompt** ครอบคลุม style, character, environment ที่คงที่ตลอดวิดีโอ
+5. prompt ควรใช้คำกริยาเชิง cinematic ที่สื่อ speed, direction, intensity เพื่อให้ motion ชัดขึ้น
 
 ### System Prompt Template (ส่งให้ Claude API)
 
@@ -155,12 +156,13 @@ Your task is to analyze a scene description and break it down into temporal segm
 for use with the Prompt Relay Encode (Timeline) node in ComfyUI.
 
 Rules:
-- Segment 1 MUST describe only the static visible state (no action, no motion)
-- Subsequent segments describe ONLY what changes — do not repeat static elements
+- Segment 1 should establish the visible state, and may include subtle anticipatory motion if the scene is dynamic
+- Subsequent segments describe ONLY what changes — do not repeat static elements unless continuity would be lost
 - Keep each segment 2-5 seconds (you will receive target duration and segment count)
 - global_prompt must contain: shot type, lighting, subject, environment, style/aesthetic
-- Each segment prompt must be concise, action-focused, under 20 words
-- Assign a weight (1-10) to each segment based on how much time it deserves
+- Each segment prompt should stay concise but vivid, usually 20-35 words
+- Use cinematic motion language when movement matters: speed, direction, intensity, camera movement
+- Assign a weight (1-10) to each segment based on how much time it deserves and how motion-heavy it is
 
 If a reference image is provided, use it to anchor the visual style and subject appearance
 in your global_prompt and segment 1 description.
@@ -185,6 +187,32 @@ Reference image: {attached or "none"}
 
 Generate the timeline breakdown now.
 ```
+
+### Motion Strategy ที่เพิ่มเข้ามา
+
+ระบบรุ่นปัจจุบันเพิ่ม logic ฝั่ง app และ RunningHub เพื่อให้ video เคลื่อนไหวชัดขึ้น:
+
+1. **Motion-aware prompt generation**
+  - analyzer จะชี้นำให้ใช้คำกริยาเชิง action มากขึ้น
+  - segment แรกไม่ถูกบังคับให้นิ่งล้วนอีกต่อไป
+
+2. **Motion-aware segment inference**
+  - ฉากที่มี action-heavy keywords จะถูก bias ให้มี segment มากขึ้น
+  - ฉากนิ่งจะยังคง pacing แบบช้าและยาวกว่า
+
+3. **Static opener rebalancing**
+  - ถ้า segment แรกไม่มี motion verb ชัด ระบบจะกด weight ลงเล็กน้อย
+  - เฟรมที่เหลือจะถูกย้ายไปยัง segment ที่มี action มากกว่า
+
+4. **RunningHub motion profiles**
+  - `fast`: steps 8/8, cfg 2.5
+  - `balanced`: steps 10/10, cfg 3.0
+  - `cinematic`: steps 12/12, cfg 3.5
+  - profile จะถูก map ไปยัง KSampler nodes 73 และ 83 แบบอัตโนมัติ
+
+5. **Frame parity กับ workflow**
+  - `maxFrames` และ `length` ที่ส่งไป RunningHub จะตรงกับ payload แล้ว
+  - ตัดปัญหา off-by-one ที่เคยทำให้ timeline drift ลง workflow
 
 ---
 

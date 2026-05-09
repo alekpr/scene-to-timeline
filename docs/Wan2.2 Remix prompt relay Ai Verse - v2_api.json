@@ -13,13 +13,13 @@
   "73": {
     "inputs": {
       "add_noise": "enable",
-      "noise_seed": 281675999652112,
-      "steps": 6,
-      "cfg": 1,
+      "noise_seed": 619838351021923,
+      "steps": 12,
+      "cfg": 3.5,
       "sampler_name": "uni_pc",
       "scheduler": "beta",
       "start_at_step": 0,
-      "end_at_step": 4,
+      "end_at_step": 7,
       "return_with_leftover_noise": "enable",
       "model": [
         "117",
@@ -145,12 +145,12 @@
   "83": {
     "inputs": {
       "add_noise": "disable",
-      "noise_seed": 276659373045694,
-      "steps": 6,
-      "cfg": 1,
+      "noise_seed": 224545098164107,
+      "steps": 12,
+      "cfg": 3.5,
       "sampler_name": "uni_pc",
       "scheduler": "beta",
-      "start_at_step": 4,
+      "start_at_step": 6,
       "end_at_step": 10000,
       "return_with_leftover_noise": "disable",
       "model": [
@@ -177,7 +177,7 @@
   },
   "85": {
     "inputs": {
-      "image": "9bf08919891131233244c2728d63e655dca8e2e3421147de2d6b9ffcd4427428.jpg"
+      "image": "a61af6780350c87dccfe7c74f29f123ed93b87592326cd54a84be8e824170f52.jpg"
     },
     "class_type": "LoadImage",
     "_meta": {
@@ -237,11 +237,11 @@
   },
   "117": {
     "inputs": {
-      "global_prompt": "Medium close-up shot of middle-aged politician in navy suit and red tie at press conference podium, dark blue curtain background with official logos, professional key lighting from camera left creating dramatic shadows, cool blue uplighting, 4K cinematic quality with subtle digital haze",
+      "global_prompt": "Medium shot, dark abstract digital space with floating holographic displays and data points, cyan-blue lighting with soft digital glow, computer interior environment, clinical sci-fi aesthetic with transparent wireframe politician head model centered in frame",
       "max_frames": 193,
-      "timeline_data": "{\"segments\":[{\"prompt\":\"Politician standing still at podium, serious expression, hands positioned on podium edges\",\"length\":58,\"color\":\"#4f8edc\"},{\"prompt\":\"Politician begins speaking earnestly, mouth moving, subtle imperceptible digital zoom begins\",\"length\":57,\"color\":\"#e07b3a\"},{\"prompt\":\"Microsecond digital glitch reveals wireframe underneath skin around mouth and eyes, brief digital glow, snaps back to normal\",\"length\":78,\"color\":\"#d9534f\"}]}",
-      "local_prompts": "Politician standing still at podium, serious expression, hands positioned on podium edges | Politician begins speaking earnestly, mouth moving, subtle imperceptible digital zoom begins | Microsecond digital glitch reveals wireframe underneath skin around mouth and eyes, brief digital glow, snaps back to normal",
-      "segment_lengths": "58, 57, 78",
+      "timeline_data": "{\"segments\":[{\"prompt\":\"Transparent wireframe head model glowing with cyan light, completely still\",\"length\":38,\"color\":\"#4f8edc\"},{\"prompt\":\"Thousands of tiny glowing photos begin flying in from all directions\",\"length\":58,\"color\":\"#e07b3a\"},{\"prompt\":\"Photos converge rapidly, forming detailed 3D wireframe point-cloud structure\",\"length\":38,\"color\":\"#d9534f\"},{\"prompt\":\"Bright wave of light washes over, transforming to photorealistic blinking head\",\"length\":59,\"color\":\"#5cb85c\"}]}",
+      "local_prompts": "Transparent wireframe head model glowing with cyan light, completely still | Thousands of tiny glowing photos begin flying in from all directions | Photos converge rapidly, forming detailed 3D wireframe point-cloud structure | Bright wave of light washes over, transforming to photorealistic blinking head",
+      "segment_lengths": "38, 58, 38, 59",
       "epsilon": 0.001,
       "fps": 24,
       "time_units": "frames",
@@ -289,11 +289,11 @@
   },
   "129": {
     "inputs": {
-      "global_prompt": "Medium close-up shot of middle-aged politician in navy suit and red tie at press conference podium, dark blue curtain background with official logos, professional key lighting from camera left creating dramatic shadows, cool blue uplighting, 4K cinematic quality with subtle digital haze",
+      "global_prompt": "Medium shot, dark abstract digital space with floating holographic displays and data points, cyan-blue lighting with soft digital glow, computer interior environment, clinical sci-fi aesthetic with transparent wireframe politician head model centered in frame",
       "max_frames": 193,
-      "timeline_data": "{\"segments\":[{\"prompt\":\"Politician standing still at podium, serious expression, hands positioned on podium edges\",\"length\":58,\"color\":\"#4f8edc\"},{\"prompt\":\"Politician begins speaking earnestly, mouth moving, subtle imperceptible digital zoom begins\",\"length\":48,\"color\":\"#e07b3a\"},{\"prompt\":\"Microsecond digital glitch reveals wireframe underneath skin around mouth and eyes, brief digital glow, snaps back to normal\",\"length\":87,\"color\":\"#d9534f\"}]}",
-      "local_prompts": "Politician standing still at podium, serious expression, hands positioned on podium edges | Politician begins speaking earnestly, mouth moving, subtle imperceptible digital zoom begins | Microsecond digital glitch reveals wireframe underneath skin around mouth and eyes, brief digital glow, snaps back to normal",
-      "segment_lengths": "58, 48, 87",
+      "timeline_data": "{\"segments\":[{\"prompt\":\"Transparent wireframe head model glowing with cyan light, completely still\",\"length\":38,\"color\":\"#4f8edc\"},{\"prompt\":\"Thousands of tiny glowing photos begin flying in from all directions\",\"length\":58,\"color\":\"#e07b3a\"},{\"prompt\":\"Photos converge rapidly, forming detailed 3D wireframe point-cloud structure\",\"length\":38,\"color\":\"#d9534f\"},{\"prompt\":\"Bright wave of light washes over, transforming to photorealistic blinking head\",\"length\":59,\"color\":\"#5cb85c\"}]}",
+      "local_prompts": "Transparent wireframe head model glowing with cyan light, completely still | Thousands of tiny glowing photos begin flying in from all directions | Photos converge rapidly, forming detailed 3D wireframe point-cloud structure | Bright wave of light washes over, transforming to photorealistic blinking head",
+      "segment_lengths": "38, 58, 38, 59",
       "epsilon": 0.001,
       "fps": 24,
       "time_units": "frames",

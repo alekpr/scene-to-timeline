@@ -968,12 +968,12 @@
         "enable",
         619838351021923,
         "randomize",
-        6,
-        1,
+        12,
+        3.5,
         "uni_pc",
         "beta",
         0,
-        4,
+        7,
         "enable"
       ]
     },
@@ -1109,11 +1109,11 @@
         "disable",
         224545098164107,
         "randomize",
-        6,
-        1,
+        12,
+        3.5,
         "uni_pc",
         "beta",
-        4,
+        6,
         10000,
         "disable"
       ]
@@ -1139,7 +1139,7 @@
         "widget_ue_connectable": {}
       },
       "widgets_values": [
-        "## ปรับค่าแบบ Manual\n- เวอร์ชันนี้ตัด Quick Controls ออกทั้งหมดแล้ว\n- ให้ปรับ Width/Height/Length ที่โหนด 121 และ 79 โดยตรง\n- ให้ปรับ Max Frames/FPS/Time Units ที่โหนด 117 และ 129 โดยตรง\n- ให้ปรับ Frame Rate ที่โหนด 108 และ 132 โดยตรง\n\n## สรุปการทำงาน Workflow\n1. โหลดโมเดล 2 สาย (high-noise และ low-noise) พร้อม LoRA, Sage attention และ sampling shift\n2. รับภาพตั้งต้นจาก LoadImage แล้วสร้าง conditioning สำหรับ Wan i2v\n3. ใช้ PromptRelay ทำ timeline prompt แบบหลายช่วง\n4. Sampling รอบแรกด้วย high-noise model เพื่อขึ้นโครง motion\n5. Sampling รอบสองด้วย low-noise model เพื่อเก็บรายละเอียด\n6. Decode latent เป็นเฟรมภาพ\n7. รวมวิดีโอ, ทำ RIFE interpolation, แล้วรวมวิดีโอรอบสุดท้าย\n\n## Checklist ปรับค่าได้ทันที\n\n### 1) เคลื่อนไหวนิ่งขึ้น\n- โหนด 73, 83: เพิ่ม steps จาก 6 -> 8-10\n- โหนด 73: เพิ่ม end_at_step จาก 4 -> 5-6\n- โหนด 83: ตั้ง start_at_step ให้เท่ากับ end_at_step ของโหนด 73\n- โหนด 117, 129: ทำ segment_lengths ให้ต่อเนื่อง และหลีกเลี่ยง segment สั้นมาก\n- โหนด 131 (RIFE): ตั้ง fast_mode = false เมื่อเน้นความนิ่ง\n\n### 2) ประหยัด VRAM / เร็วขึ้น\n- เริ่มที่ 512x896, 97 เฟรม, 16 fps\n- โหนด 73, 83: steps 6/6 เป็นจุดเริ่มต้นที่ปลอดภัยกับ 24GB\n- โหนด 131: multiplier = 1 และ ensemble = false\n- ถ้ายัง OOM ให้ลดเป็น 448x768 หรือ 73 เฟรม\n\n### 3) คมขึ้น\n- โหนด 83: เพิ่ม steps เป็น 8-12 โดยคง add_noise = disable\n- โหนด 131: fast_mode = false และ ensemble = true เมื่อ VRAM พอ\n- โหนด 132: ลด crf เป็น 16-18 เพื่อเก็บรายละเอียด\n\n## จุดที่ควรตรวจทุกครั้ง\n- start_at_step (โหนด 83) ต้องต่อจาก end_at_step (โหนด 73)\n- timeline_data และ segment_lengths ยังต้องสอดคล้องกับ duration ที่ใช้\n- ถ้าเปลี่ยน duration มาก ให้ตรวจ PromptRelay ว่าจังหวะ prompt ยังพอดี"
+        "## ปรับค่าแบบ Manual\n- เวอร์ชันนี้ตัด Quick Controls ออกทั้งหมดแล้ว\n- ให้ปรับ Width/Height/Length ที่โหนด 121 และ 79 โดยตรง\n- ให้ปรับ Max Frames/FPS/Time Units ที่โหนด 117 และ 129 โดยตรง\n- ให้ปรับ Frame Rate ที่โหนด 108 และ 132 โดยตรง\n\n## สรุปการทำงาน Workflow\n1. โหลดโมเดล 2 สาย (high-noise และ low-noise) พร้อม LoRA, Sage attention และ sampling shift\n2. รับภาพตั้งต้นจาก LoadImage แล้วสร้าง conditioning สำหรับ Wan i2v\n3. ใช้ PromptRelay ทำ timeline prompt แบบหลายช่วง\n4. Sampling รอบแรกด้วย high-noise model เพื่อขึ้นโครง motion\n5. Sampling รอบสองด้วย low-noise model เพื่อเก็บรายละเอียด\n6. Decode latent เป็นเฟรมภาพ\n7. รวมวิดีโอ, ทำ RIFE interpolation, แล้วรวมวิดีโอรอบสุดท้าย\n\n## Motion Profiles ที่แนะนำ\n- fast: โหนด 73/83 = steps 8/8, cfg 2.5 สำหรับลองงานเร็ว\n- balanced: โหนด 73/83 = steps 10/10, cfg 3.0 สำหรับงานทั่วไป\n- cinematic: โหนด 73/83 = steps 12/12, cfg 3.5 สำหรับ motion ชัดและ prompt adherence สูง\n\n## Checklist ปรับค่าได้ทันที\n\n### 1) เคลื่อนไหวนิ่งขึ้น\n- โหนด 73, 83: ใช้ cinematic เป็นจุดเริ่มต้นก่อน แล้วค่อยลดถ้าช้าเกินไป\n- โหนด 73: end_at_step 6-7 จะช่วยขึ้นโครง motion ให้ชัดขึ้น\n- โหนด 83: start_at_step 6 จะช่วยให้ handoff เนียนและลด seam\n- โหนด 117, 129: ทำ segment_lengths ให้ต่อเนื่อง และหลีกเลี่ยง segment สั้นมาก\n- โหนด 131 (RIFE): ตั้ง fast_mode = false เมื่อเน้นความนิ่ง\n\n### 2) ประหยัด VRAM / เร็วขึ้น\n- เริ่มที่ 512x896, 97 เฟรม, 16 fps\n- ถ้าต้องการเรนเดอร์เร็วขึ้น ให้ลดไปใช้ profile fast ก่อนลด resolution\n- โหนด 131: multiplier = 1 และ ensemble = false\n- ถ้ายัง OOM ให้ลดเป็น 448x768 หรือ 73 เฟรม\n\n### 3) คมขึ้น\n- โหนด 83: เพิ่ม steps เป็น 12-14 โดยคง add_noise = disable\n- โหนด 131: fast_mode = false และ ensemble = true เมื่อ VRAM พอ\n- โหนด 132: ลด crf เป็น 16-18 เพื่อเก็บรายละเอียด\n\n## จุดที่ควรตรวจทุกครั้ง\n- start_at_step (โหนด 83) ควรต่อใกล้ end_at_step (โหนด 73) และอาจ overlap ได้ 1 step\n- timeline_data และ segment_lengths ยังต้องสอดคล้องกับ duration ที่ใช้\n- ถ้าเปลี่ยน duration มาก ให้ตรวจ PromptRelay ว่าจังหวะ prompt ยังพอดี"
       ],
       "color": "#234",
       "bgcolor": "#355"
@@ -1664,7 +1664,7 @@
       ],
       "size": [
         400,
-        448
+        468
       ],
       "flags": {},
       "order": 15,
@@ -1687,6 +1687,13 @@
           "name": "latent",
           "type": "LATENT",
           "link": 167
+        },
+        {
+          "label": "relay_options",
+          "name": "relay_options",
+          "shape": 7,
+          "type": "RELAY_OPTIONS",
+          "link": null
         },
         {
           "label": "global_prompt",
@@ -1799,7 +1806,7 @@
       ],
       "size": [
         400,
-        448
+        468
       ],
       "flags": {},
       "order": 14,
@@ -1822,6 +1829,13 @@
           "name": "latent",
           "type": "LATENT",
           "link": 192
+        },
+        {
+          "label": "relay_options",
+          "name": "relay_options",
+          "shape": 7,
+          "type": "RELAY_OPTIONS",
+          "link": null
         },
         {
           "label": "global_prompt",
@@ -2234,10 +2248,10 @@
     "frontendVersion": "1.23.0",
     "VHS_latentpreview": false,
     "ds": {
-      "scale": 0.797202450000002,
+      "scale": 0.7247295000000009,
       "offset": [
-        -4942.431698436522,
-        -900.4405324861892
+        -3634.618405124351,
+        -864.7169808740432
       ]
     }
   },

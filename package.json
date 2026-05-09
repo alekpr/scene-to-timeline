@@ -12,6 +12,7 @@
     "start": "tsx src/cli/index.ts",
     "dev:web": "tsx src/server.ts",
     "web": "tsx src/server.ts",
+    "smoke:runninghub": "bash ./run-runninghub-smoke.sh",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:integration": "INTEGRATION_TEST=1 vitest run tests/integration.test.ts"

@@ -155,6 +155,13 @@ source .env && ./test-with-api.sh
 npm run build
 ```
 
+## Motion Tuning Playbook
+
+เอกสารสรุปการจูน motion รอบนี้สำหรับนำไป reuse กับโปรเจกต์อื่น:
+
+- [docs/motion-tuning-playbook.md](docs/motion-tuning-playbook.md)
+- [docs/runninghub-qa-checklist.md](docs/runninghub-qa-checklist.md)
+
 ---
 
 ## **Phase 3 — Web UI** 🌐
@@ -175,9 +182,11 @@ The UI will be available at **http://localhost:3000**
 - Scene description textarea (Thai/English support)
 - Duration input (seconds)
 - Optional FPS override
+- RunningHub workflow selector: `wan`, `ltx`
 - Optional segment count override
 - Optional voiceover transcript
 - Optional reference image via drag-and-drop or file picker
+- RunningHub motion profile selector: `fast`, `balanced`, `cinematic`
 
 📊 **Real-time Results**
 - Global prompt for the scene
@@ -206,6 +215,7 @@ curl -X POST http://localhost:3000/api/generate-timeline \
   -d '{
     "scene": "A mysterious figure in fog at a cliff edge",
     "duration": 8,
+    "workflowType": "ltx",
     "fps": 24,
     "segments": 3,
     "transcript": "Optional voiceover text",
@@ -239,6 +249,75 @@ curl -X POST http://localhost:3000/api/generate-timeline \
   }
 }
 ```
+
+### RunningHub Motion Profiles
+
+When using the cloud workflow endpoint, the app now injects sampler presets automatically instead of forcing one fixed sampler configuration.
+
+Current rollout status:
+
+- `ltx` is now the default workflow in the UI and smoke script.
+- `wan` remains available as a legacy option through `workflowType: "wan"`.
+
+| Profile | KSampler Steps | CFG | Intended Use |
+|---|---:|---:|---|
+| `fast` | 8 / 8 | 1.0 | Restored to the original workflow reference sampler settings |
+| `balanced` | 8 / 8 | 1.0 | Restored to the original workflow reference sampler settings |
+| `cinematic` | 8 / 8 | 1.0 | Temporarily aligned with the original workflow reference for stability |
+| `template-like` | LTX experimental | LTX experimental | Template-inspired LTX tuning (best for realism A/B tests on LTX) |
+
+The profile is applied to RunningHub nodes `73` and `83` during request mapping. Timeline frame counts now stay exactly aligned with `maxFrames` from the generated payload.
+
+### RunningHub Endpoint
+
+To generate a timeline and immediately run the configured workflow on RunningHub:
+
+```bash
+curl -X POST http://localhost:3000/api/generate-and-run-runninghub \
+  -H "Content-Type: application/json" \
+  -d '{
+    "scene": "A masked courier sprints through rain, vaults a barrier, and slides into neon light",
+    "duration": 8,
+    "fps": 24,
+    "workflowType": "ltx",
+    "motionProfile": "cinematic",
+    "image": "data:image/jpeg;base64,..."
+  }'
+```
+
+`workflowType` is optional. If omitted, the server uses `ltx`. For `wan` (legacy), set `RUNNINGHUB_WORKFLOW_ID` in `.env`. For `ltx`, set `RUNNINGHUB_LTX_WORKFLOW_ID` in `.env`.
+
+`motionProfile` is optional. If omitted or invalid, the server falls back to `balanced`.
+
+### RunningHub Smoke Test (Recommended After Changes)
+
+Run the end-to-end smoke test for all motion profiles.
+
+- `wan`: `fast`, `balanced`, `cinematic`
+- `ltx`: `fast`, `balanced`, `cinematic`, `template-like`
+
+```bash
+npm run smoke:runninghub
+```
+
+Prerequisites:
+
+- Start server first: `npm run dev:web`
+- Provide a valid image file path via `IMAGE_FILE=...`
+- Ensure RunningHub credentials are present in `.env`
+- For LTX runs, set `RUNNINGHUB_LTX_WORKFLOW_ID` in `.env`
+
+Override defaults with env vars when needed:
+
+```bash
+IMAGE_FILE=./your-frame.jpg DURATION=8 FPS=24 WORKFLOW_TYPE=ltx npm run smoke:runninghub
+```
+
+Artifacts are saved under `outputs/` as:
+
+- `smoke-<profile>-create.json`
+- `smoke-<profile>-status.json`
+- `smoke-<profile>-output.json`
 
 ### Development
 
